@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "skillsync"
+version = "0.1.0"
+description = ""
+authors = ["nhlakanipho <nqmasilela777@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+click = "^8.1.8"
+python-dotenv="1.0.1"
+firebase_admin="6.6.0"
+pwinput="1.0.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+skillsync = "app:cli"
