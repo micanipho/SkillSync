@@ -1,4 +1,4 @@
-import firebase_admin
+import firebase_admin, pyrebase
 from firebase_admin import credentials
 from firebase_admin import auth
 from firebase_admin import db
@@ -13,6 +13,19 @@ firebase_admin.initialize_app(cred, {
     'databaseURL': os.getenv('DATABASEURL')
 })
 
+config = {
+    "apiKey": os.getenv('APIKEY'), 
+    "authDomain": os.getenv('AUTHDOMAIN'),
+    "databaseURL": os.getenv('DATABASEURL'),
+    "projectId": os.getenv('PROJECTID'),
+    "storageBucket": os.getenv('STORAGEBUCKET'),
+    "messagingSenderId": os.getenv('MESSAGINGSENDERID'),
+    "appId": os.getenv('APPID'),
+    "measurementId": os.getenv('MEASUREMENTID')
+}
+
+firebase = pyrebase.initialize_app(config)
+firebase_auth = firebase.auth()
 auth = auth
 db = db.reference()
 
@@ -27,16 +40,9 @@ def signup(data):
     Returns:
         bool: True if the signup was successful, False otherwise.
     """
-    if not "@" in data['email'] or not "." in data['email']:
-        print("Invalid email format.")
-        return
 
-    if len(data['password']) < 8:
-        print("Password must be at least 8 characters long.")
-        return
-
-    if data['role'].lower() not in ["mentor", "peer"]:
-        print("Invalid role. Please enter 'mentor' or 'peer'.")
+    if data['role'].lower() not in ["mentor", "student"]:
+        print("Invalid role. Please enter 'mentor' or 'student'.")
         return
 
     try:
@@ -51,7 +57,6 @@ def signup(data):
         del data['password']
         db.child("users").child(uid).set(data)
 
-        print("Successfully signed up.")
         return True
 
     except firebase_admin.exceptions.AuthError as e:
@@ -61,7 +66,7 @@ def signup(data):
         print(f"Error during signup: {e}")
         return False
 
-def login(data):
+def signin(data):
     """
     Logs in a user by verifying their email and password using Firebase Authentication.
 
@@ -72,15 +77,13 @@ def login(data):
         bool: True if login is successful, False if authentication fails.
     """
     try:
-        user = auth.sign_in_with_email_and_password(
-            email=data['email'],
-            password=data['password']
-        )
+        # Sign in using Firebase Client SDK
+        user = firebase_auth.sign_in_with_email_and_password(data['email'], data['password'])
         print("Successfully logged in.")
         return True
 
-    except firebase_admin.exceptions.AuthError:
-        print("Invalid email or password.")
+    except Exception as e:
+        print(f"Error during login: {e}")
         return False
 
 def available_mentors():
@@ -93,21 +96,21 @@ def available_mentors():
     mentors = db.child("users").order_by_child("role").equal_to('mentor').get()
     return mentors
 
-def available_peers(expertise=None):
+def available_students(expertise=None):
     """
-    Retrieves all users with the role 'peer' from the Firebase Realtime Database.
-    Optionally filters peers by their expertise.
+    Retrieves all users with the role 'student' from the Firebase Realtime Database.
+    Optionally filters students by their expertise.
 
     Args:
         expertise (str, optional): The expertise field to filter peers by. Defaults to None.
 
     Returns:
-        dict: A dictionary containing all peers, or peers filtered by expertise if provided.
+        dict: A dictionary containing all students, or students filtered by expertise if provided.
     """
     if expertise is None:
-        peers = db.child("users").order_by_child("role").equal_to('peer').get()
+        peers = db.child("users").order_by_child("role").equal_to('student').get()
     else:
-        peers = db.child("users").order_by_child("role").equal_to('peer').order_by_child('expertise').equal_to(expertise).get()
+        peers = db.child("users").order_by_child("role").equal_to('student').order_by_child('expertise').equal_to(expertise).get()
     return dict(peers)
 
 # data = {"name": "Micas", "email": "kkk123@gmail.com", "password": "Micasa@123", "role": "mentor"}
